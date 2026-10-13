@@ -1,0 +1,41 @@
+enum LeadStatus { NEW CONTACTED QUOTED SOLD LOST }
+enum Role { AGENT MANAGER }
+
+type Agent {
+  id: ID!
+  name: String!
+  role: Role!
+}
+
+type Lead {
+  id: ID!
+  fullName: String!
+  state: String!
+  product: String!
+  status: LeadStatus!
+  "The agent who owns the lead, or null while it is still in the open pool."
+  agent: Agent
+  createdAt: String!
+}
+
+type LeadEdge { cursor: String! node: Lead! }
+type PageInfo { endCursor: String hasNextPage: Boolean! }
+type LeadConnection { edges: [LeadEdge!]! pageInfo: PageInfo! totalCount: Int! }
+
+type StatusCount { status: LeadStatus! count: Int! }
+
+type Query {
+  me: Agent!
+  "Leads the caller may see: an agent sees the open pool and their own; a manager sees all."
+  leads(status: LeadStatus, first: Int = 20, after: String): LeadConnection!
+  lead(id: ID!): Lead
+  "Counts by status over the leads the caller may see."
+  pipeline: [StatusCount!]!
+}
+
+type Mutation {
+  "Take an unowned lead. If two agents claim at once, exactly one succeeds."
+  claimLead(id: ID!): Lead!
+  "Move a lead you own to a new status. Only allowed transitions are accepted."
+  updateLeadStatus(id: ID!, status: LeadStatus!): Lead!
+}
